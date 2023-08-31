@@ -12,11 +12,11 @@ PCIE设备的两种资源：配置空间，MMIO
 >
 >    软件可以通过配置空间对设备的状态进行检查和控制。每个PCIe Function都有4KB的配置空间，地址范围为0x000-0xfff。前256B是和PCI兼容的配置空间，剩余的是PCIe扩展配置空间：
 >
->    <img src="/Users/smx1228/Desktop/GPU虚拟化/WechatIMG468.jpg" alt="WechatIMG468" style="zoom:50%;" />
+>    <img src="./pic/WechatIMG468.jpg" alt="WechatIMG468" style="zoom:50%;" />
 >
 >    基地址寄存器（BAR）在配置空间中的位置如下图所示。其中Type 0 Header最多有六个BAR，Type 1 Header最多有2个BAR。这意味着对于endpoint来说，最多可以拥有6个不同的地址空间。但实际应用中基本用不到，通常1～3个BAR比较常见。
 >
->    <img src="/Users/smx1228/Desktop/GPU虚拟化/v2-f03d917cae9002c88fcad1a7ed13cfb3_r.jpg" alt="v2-f03d917cae9002c88fcad1a7ed13cfb3_r" style="zoom:60%;" />
+>    <img src="./pic/v2-f03d917cae9002c88fcad1a7ed13cfb3_r.jpg" alt="v2-f03d917cae9002c88fcad1a7ed13cfb3_r" style="zoom:60%;" />
 >
 >    基地址寄存器（BAR）：外设内部的地址都是从0开始的。当PCI控制器接入多个PCI设备时，为了确保PCI上的内存地址不冲突，PCI总线配置BAR寄存器，从而使设备的内存空间和IO空间可用。
 >
@@ -24,7 +24,7 @@ PCIE设备的两种资源：配置空间，MMIO
 >
 >    一旦BAR值确定了（have been programmed），其指定范围内的当前设备中的内部寄存器（或内部存储空间）就可以被访问了。当该设备确认某一个请求（request）中的地址在自己的BAR的范围内，便会接受请求并处理。
 >
->    http://blog.chinaaet.com/justlxy/p/5100053328
+>    > http://blog.chinaaet.com/justlxy/p/5100053328
 >
 > 2. Memory空间和IO空间
 >
@@ -32,7 +32,7 @@ PCIE设备的两种资源：配置空间，MMIO
 >
 >    后来计算机普遍使用64位系统后，内存空间和I/O空间开始不再区分。（为了兼容一些较老的设备和软件，PCIe仍然支持I/O地址空间，只是建议在新开发的软件中采用MMIO。）
 >
->    <img src="/Users/smx1228/Desktop/GPU虚拟化/WechatIMG469.jpg" alt="WechatIMG469" style="zoom:40%;" />
+>    <img src="./pic//WechatIMG469.jpg" alt="WechatIMG469" style="zoom:40%;" />
 >
 >    MMIO：Memory Mapping I/O，即内存映射I/O，是PCI规范的一部分，I/O设备被放置在内存空间而不是I/O空间。从处理器的角度来看，内存映射I/O后系统设备访问起来和内存一样，可以使用读写内存的汇编指令完成，简化了程序设计的难度和接口复杂性。
 >
@@ -94,7 +94,7 @@ IOMMU（I/O Memory Management Unit）负责I/O虚拟地址和物理内存地址�
 
 PF和VF之间的通信：比如VF把客户机IO请求发给PF，PF也会把一些全局设备重置等事件发给VF。有的设备采用的是Doorbell机制，发送方把消息放入信箱，按一下门铃，产生中断通知接收方，接收方读到消息在共享寄存器做个标记，表示信息接收了。
 
-zhuanlan.zhihu.com/p/630066202
+>  zhuanlan.zhihu.com/p/630066202
 
 深入理解：
 
@@ -143,4 +143,4 @@ GPU存在的困难：虽然基本是无状态的，但硬件复杂度极高，pa
 
 ## Comparison
 
-<img src="/Users/smx1228/Desktop/GPU虚拟化/qgmrs0oioe.jpeg" alt="qgmrs0oioe" style="zoom:50%;" />
+<img src="./pic/qgmrs0oioe.jpeg" alt="qgmrs0oioe" style="zoom:50%;" />
