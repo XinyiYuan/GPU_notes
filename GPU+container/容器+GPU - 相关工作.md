@@ -1,24 +1,4 @@
-> 2023.8.29
->
-> k8s封装GPU，Pod资源调度管理
->
-> cuda 国产硬件库函数 编译 cuda工作原理 层次
->
-> arm生态 -> riscv生态，自动化迁移
-
 [TOC]
-
-## CUDA工作原理
-
-<img src="./pic/032zh3rohx.jpeg" alt="032zh3rohx" style="zoom:50%;" />
-
-Nvidia GPU的软件调用栈：
-
-ML程序 -> TensorFlow/PyTorch/paddle等框架 -> Cuda Runtime及周边生态（cudart、cublas、cudnn、cufft、cusparse等） -> Cuda driver (User Mode Driver) -> Nvidia driver (Kernel Mode Driver) -> Nvidia GPU
-
-CUDA开发者使用的，通常是CUDA Runtime API（high-level），而CUDA Driver API是low-level的，对程序和GPU硬件有更精细的控制。Runtime API是对Driver API的封装。
-
-CUDA Driver即为UMD（User Mode Driver，GPU用户态驱动程序），他直接和KMD（Kernel Mode Driver，GPU内核态驱动程序）打交道。两者都属于Nvidia Driver Package。英伟达软件生态封闭：无论是 nvidia.ko，还是 libcuda.so，还是 libcudart，都是被剥离了符号表的。大多数函数名是加密替换了的。其它的反调试、反逆向手段也基本不可用。（nvidia实习生实现了cuda driver逆向工程。只你想了一小部分umd和kmd之间的接口，已不维护）
 
 ## GPU共享
 
@@ -32,7 +12,7 @@ CUDA Driver即为UMD（User Mode Driver，GPU用户态驱动程序），他直�
 
 GPU池化：使用远程访问的形式使用GPU资源，任务是用本机的CPU和另一台机器的GPU，两者通过网络进行通信。
 
-## 容器GPU虚拟化
+## 容器 + GPU
 
 ### NVidia（均未开源）
 
@@ -67,7 +47,7 @@ GPU池化：使用远程访问的形式使用GPU资源，任务是用本机的CP
 
   和Gaia一样，在Cuda driver API之上，通过劫持调用来做资源隔离。不同的是，rCuda除了资源隔离，最主要的目标是支持池化。池化简单来讲就是使用远程访问的形式使用GPU资源，任务使用本机的CPU和另一台机器的GPU，两者通过网络进行通信。也是因为这个原因，共享模块需要将CPU和GPU的调用分开。然而正常情况下混合编译的程序会插入一些没有开源的Cuda API，因此需要使用作者提供的cuda，分别编译程序的CPU和GPU部分。如果使用该产品，用户需要重新编译，对用户有一定的影响。
 
-- Gandiva (OSDI ’18)
+- **Gandiva (OSDI ’18)**
 
   https://zhuanlan.zhihu.com/p/347789271
 
@@ -80,6 +60,8 @@ GPU池化：使用远程访问的形式使用GPU资源，任务是用本机的CP
   使用深度强化学习agent进行资源调度决策，云平台根据决策加载无状态函数。
 
   特点：每个epoch都会用agent进行一次决策。所以在不同epoch中可以启动不同数量、不同内存配置的函数。解决了ML工作流中不同任务异构性导致的资源不平衡问题。ML用户往往会根据整个工作流中需要最大算力的时刻进行资源分配，导致GPU利用率降低。
+
+  > Heterogeneity (异质性、异构性)。训练任务在运行过程中，例如前向传播、反向求导、梯度更新等阶段对 GPU 资源的需求是不同的。batch 与 batch 之间 GPU 资源往往是空闲的。资源使用情况在任务进行的全程是不一致的，但这没有被充分的挖掘和利用。
 
 > A survey of GPU sharing for DL: https://zhuanlan.zhihu.com/p/285994980
 >
