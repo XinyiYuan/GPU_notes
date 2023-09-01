@@ -1,6 +1,6 @@
 # GaiaGPU - Reading Report
 
-> 原文：《GaiaGPU: Sharing GPUs in Container Clouds》(ISPA'18) https://ieeexplore.ieee.org/abstract/document/8672318
+> 原文：GaiaGPU: Sharing GPUs in Container Clouds(ISPA'18) https://ieeexplore.ieee.org/abstract/document/8672318
 >
 > > 注意：《vCUDA: GPU accelerated high performance computing in virtual machines》(IPDPS'09，TC'12，应该是先发了conference后来又发了journal)和本项目重名，但不是同一个东西。
 >
@@ -8,9 +8,9 @@
 >
 > 开源链接：https://github.com/tkestack/vcuda-controller
 >
-> 腾讯云论坛GaiaStack介绍 https://cloud.tencent.com/developer/article/1389547
+> 腾讯云论坛GaiaStack介绍：https://cloud.tencent.com/developer/article/1389547
 >
-> 腾讯云市场GaiaStack https://market.cloud.tencent.com/products/3966?productId=3966#
+> 腾讯云市场GaiaStack：https://market.cloud.tencent.com/products/3966?productId=3966#
 
 [TOC]
 

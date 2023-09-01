@@ -27,3 +27,16 @@ docker用于具体业务的困难：编排、管理、调度困难
 kubernetes集群：包括一个master（主结点，负责管理和控制）和很多node（计算结点，执行具体任务）
 
 master结点：
+
+- API Server：整个系统对外的接口，供客户端和其他组件调用
+- Scheduler：对集群内部资源的调度，按照调度策略将pod调度到相应的机器上
+- Controller Manager：资源的自动化控制中心，维护和管理集群的状态，如故障检测、自动扩展等
+- etcd：保存整个集群的状态
+
+node结点：
+
+- pod：k8s中最基本的操作单元，每个pod代表集群中运行的一个进程，内部封装了一个或多个紧密相关的容器
+- docker：用来创建容器
+- kubelet：负责pod对应容器的创建、启停等任务，同时和master结点协作完成集群管理
+- kube-proxy：为pod对象提供代理
+- fluentd：日志收集、存储和查询

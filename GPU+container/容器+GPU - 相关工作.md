@@ -21,51 +21,122 @@ GPU池化：使用远程访问的形式使用GPU资源，任务是用本机的CP
 
 ### kubernetes
 
-- 阿里 cGPU，未开源无论文。支持容器级GPU虚拟化，多个容器共享GPU。但只能在阿里云使用。
+- 阿里 cGPU，未开源无论文。
 
-  其共享模块在Nvidia driver层之上，也就是内核态。由于是在公有云使用，相对于用户态的共享会更加安全。它也是通过劫持对driver的调用完成资源隔离的，通过设置任务占用时间片长度来分配任务占用算力，但不清楚使用何种方式精准地控制上下文切换的时间。值得一提的是，由于Nvidia driver是不开源的，因此需要一些逆向工程才可以获得driver的相关method的name和ioctl参数的结构。该方案在使用上对用户可以做到无感知，当然JCT是有影响的。
+  > https://www.alibabacloud.com/help/zh/elastic-gpu-service/latest/use-docker-to-install-and-use-cgpu
 
-- **腾讯TKE等 GaiaGPU/vCUDA (ISPA'18)，开源**。它通过劫持对Cuda driver API的调用来做到资源隔离。劫持的调用如图二所示。具体实现方式也较为直接，在调用相应API时检查：（1）对于显存，一旦该任务申请显存后占用的显存大小大于config中的设置，就报错。（2）对于计算资源，存在硬隔离和软隔离两种方式，共同点是当任务使用的GPU SM利用率超出资源上限，则暂缓下发API调用。不同点是如果有资源空闲，软隔离允许任务超过设置，动态计算资源上限。而硬隔离则不允许超出设置量。
+  支持容器级GPU虚拟化，多个容器共享GPU。但只能在阿里云使用。
 
-- **KubeShare (HPDC'20)，开源**。也是通过拦截转发的方式。
+  其共享模块在Nvidia driver层之上，也就是内核态。由于是在公有云使用，相对于用户态的共享会更加安全。
 
-  > GaiaGPU ... based on the LD_PRELOAD API interception technique, like our work.
+  cGPU实现了一个内核模块cgpu_km，该模块可以对一个物理GPU虚拟出16个虚拟GPU设备。在容器挂载设备时，修改后的container runtime将挂载虚拟GPU设备，而不是真实GPU设备。通过这种方式实现了GPU劫持。当用户程序的请求下发至内核模块cgpu_km时，模块通过修改请求及回复来限制GPU显存资源。
 
-- **Nvidia Docker**
+  内核模块也实现了简单的算力调度，通过限制每个容器可下发kernel的时间片来隔离算力资源（但不清楚使用何种方式精准地控制上下文切换的时间）。可以提供公平/抢占/权重三种算力分配模式。值得注意的是，cGPU目前不能中止已经发送到GPU上的请求，因此如追求算力隔离，需要延长时间片的长度，会造成一定的算力浪费。
+
+  <img src="./pic/p238613.png" alt="p238613" style="zoom:50%;" />
+
+  虽然没有完全开源，但公开了可在k8s上使用的调度器和device-plugin，可以在k8s系统上作为扩展使用。
+
+  > scheduler: https://github.com/AliyunContainerService/gpushare-scheduler-extender
+  >
+  > device plugin: https://github.com/AliyunContainerService/gpushare-device-plugin
+
+- 腾讯TKE等 GaiaGPU/vCUDA，开源。
+
+  > GaiaGPU: Sharing GPUs in Container Clouds (ISPA'18) https://ieeexplore.ieee.org/abstract/document/8672318
+  >
+  > 开源链接：https://github.com/tkestack/vcuda-controller
+  >
+  > 腾讯云论坛GaiaStack介绍：https://cloud.tencent.com/developer/article/1389547
+  >
+  > 腾讯云市场GaiaStack：https://market.cloud.tencent.com/products/3966?productId=3966#
+
+  通过劫持对Cuda driver API的调用来做到资源隔离。劫持的调用如图二所示。具体实现方式也较为直接，在调用相应API时检查：（1）对于显存，一旦该任务申请显存后占用的显存大小大于config中的设置，就报错。（2）对于计算资源，存在硬隔离和软隔离两种方式，共同点是当任务使用的GPU SM利用率超出资源上限，则暂缓下发API调用。不同点是如果有资源空闲，软隔离允许任务超过设置，动态计算资源上限。而硬隔离则不允许超出设置量。
+
+- 腾讯qGPU，未开源
+
+  > https://cloud.tencent.com/document/product/560/66232
+
+  腾讯在内核劫持类GPU共享方向上，依托腾讯云容器服务 TKE 对外开源的 [Elastic GPU](https://github.com/elastic-ai/elastic-gpu) 框架，推出了资源隔离方案qGPU（QoS GPU），支持多容器共享 GPU 与多容器跨 GPU 资源分配。
+
+  值得注意的是，qGPU效仿Nvidia vGPU在必要时context switch，实现了强算力隔离，尽量保证同时使用GPU的业务之间性能与资源不受干扰。
+
+- KubeShare，开源。
+
+  > KubeShare: A Framework to Manage GPUs as First-Class and Shared Resources in Container Cloud (HPDC'20)
+  >
+  > code: https://github.com/NTHU-LSALAB/KubeShare
+
+  在资源隔离方面和Gaia的方法类似，也是通过拦截转发的方式。
+
+- Nvidia Docker
 
   可以在docker内使用GPU，可以装一部分用户态的驱动程序。但只能给容器分配一整个GPU，无法share。
 
-- ConvGPU
+- rCUDA，未开源
 
-  在容器内share GPU memory，但不分享算力资源（线程）。
-
-  > only supports sharing of memory resources and only virtualizes a single GPU
-
-- rCUDA (HPCS'10)，未开源
-
-  http://www.rcuda.net
+  > rCUDA: Reducing the Number of GPU-Based Accelerators in High Performance Clusters (HPCS'10)
+  >
+  > http://www.rcuda.net
 
   和Gaia一样，在Cuda driver API之上，通过劫持调用来做资源隔离。不同的是，rCuda除了资源隔离，最主要的目标是支持池化。池化简单来讲就是使用远程访问的形式使用GPU资源，任务使用本机的CPU和另一台机器的GPU，两者通过网络进行通信。也是因为这个原因，共享模块需要将CPU和GPU的调用分开。然而正常情况下混合编译的程序会插入一些没有开源的Cuda API，因此需要使用作者提供的cuda，分别编译程序的CPU和GPU部分。如果使用该产品，用户需要重新编译，对用户有一定的影响。
 
-- **Gandiva (OSDI ’18)**
+- Gandiva，未开源
 
-  https://zhuanlan.zhihu.com/p/347789271
+  > Gandiva: Introspective Cluster Scheduling for Deep Learning (OSDI ’18)
+  >
+  > slide: https://www.usenix.org/sites/default/files/conference/protected-files/osdi18_slides_sivathanu.pdf
+
+  从深度学习训练任务的特点入手：Feedback-driven exploration（反馈驱动的搜索），Heterogeneity（异构性），Intra-job predictability（作业内的可预测性）。作者利用特征3来解决由特征1.2导致的GPU利用率低的问题。
+
+  <img src="./pic/WechatIMG481.jpg" alt="WechatIMG481" style="zoom:50%;" />
+
+  [TODO]还没有读完，下周可以仔细读一下这篇
 
 ### 其他
 
-- SIREN (INFOCOM'19) 是基于serverless function而不是k8s。但感觉思路可以借鉴。
+- SIREN 
 
-  一个基于无服务器架构设计的分布式机器学习框架。由两部分组成：本地客户端和无服务器云平台（AWS Lambda）。
+  > Distributed Machine Learning with a Serverless Architecture (INFOCOM'19) 
+  >
+  > This work is supported by a research contract with Huawei Corp. and an NSERC Collaborative Research and Development (CRD) grant. 所以可能不会开源
 
-  使用深度强化学习agent进行资源调度决策，云平台根据决策加载无状态函数。
+  是基于serverless function而不是k8s。但感觉思路可以借鉴。
 
+  一个基于无服务器架构设计的分布式机器学习框架。由两部分组成：本地客户端和无服务器云平台（AWS Lambda）。本地客户端使用深度强化学习agent进行资源调度决策，云平台根据决策结果为ML训练任务加载无状态函数。
+  
+  <img src="./pic/WechatIMG480.jpg" alt="WechatIMG480" style="zoom:50%;" />
+  
+  工作流程：
+  
+  本地上传一个代码包（code package，包含用户定义的ML模型和依赖的库函数）到云平台
+  
+  step1.scheduler根据初始化资源方案加载无状态函数集群
+  
+  step2.进行基于SGD的第一个epoch的训练
+  
+  step3.收集作业的函数状态数据，并返回给本地客户端
+  
+  step4.函数状态发送给深度强化学习agent（DRL Agent，已经经过训练）
+  
+  step5.DRL agent为下一个epoch做出资源调度决策，并发送给scheduler
+  
   特点：每个epoch都会用agent进行一次决策。所以在不同epoch中可以启动不同数量、不同内存配置的函数。解决了ML工作流中不同任务异构性导致的资源不平衡问题。ML用户往往会根据整个工作流中需要最大算力的时刻进行资源分配，导致GPU利用率降低。
-
+  
   > Heterogeneity (异质性、异构性)。训练任务在运行过程中，例如前向传播、反向求导、梯度更新等阶段对 GPU 资源的需求是不同的。batch 与 batch 之间 GPU 资源往往是空闲的。资源使用情况在任务进行的全程是不一致的，但这没有被充分的挖掘和利用。
 
-> A survey of GPU sharing for DL: https://zhuanlan.zhihu.com/p/285994980
->
-> GPU虚拟化，算力隔离，和qGPU: https://cloud.tencent.com/developer/article/1831090
+
 
 ## GPU migration
 
+把一个（执行中？）任务从一个GPU迁移到另一个GPU上
+
+应用场景：在任务执行过程中，某个GPU由于某些原因发生overwhelmed的情况。此时不想直接杀死运行中的任务，而想把其中一至多个任务迁移到另一个GPU上。
+
+[TODO]后续可以调研一下
+
+DCUDA: Dynamic GPU Scheduling with Live Migration Support (SoCC '19)
+
+Gandiva
+
+GPU-Job Migration: The rCUDA Case (TPDS'19)
