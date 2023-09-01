@@ -22,13 +22,13 @@
 
 At the host level, the GPU Manager is in charge of creating vGPUs, and the GPU Scheduler is responsible for allocating physical GPU resources to vGPUs. At the container level, the vGPU Library component takes charge of managing GPU resources of a specific container.
 
-<img src="/Users/smx1228/Desktop/GPU_notes/GPU+container/pic/WechatIMG473.jpg" alt="WechatIMG473" style="zoom:50%;" />
+<img src="/Users/smx1228/Desktop/GPU_notes/GPU+container/pic/WechatIMG473.jpg" alt="WechatIMG473" style="zoom:30%;" />
 
 ### GPU Manager
 
 advertise GPUs to the Kubelet.
 
-<img src="/Users/smx1228/Desktop/GPU_notes/GPU+container/pic/WechatIMG474.jpg" alt="WechatIMG474" style="zoom:50%;" />
+<img src="/Users/smx1228/Desktop/GPU_notes/GPU+container/pic/WechatIMG474.jpg" alt="WechatIMG474" style="zoom:30%;" />
 
 - Rigister: GPU manager inform the Kubelet of its existence
 - ListAndWatch: GPU Manager returns a list of devices it manages to the Kubelet. (Memory: 256MB as a unit (vmemory device); Computing resources: partition a physical GPU into 100 vprocessor devices.)
@@ -84,7 +84,7 @@ All experiments are deployed on Tencent container cloud **GaiaStack** which uses
 
 Run the **MNIST** application on five deep learning frameworks in both the host and the container, and measure its execution time.
 
-<img src="./pic/WechatIMG475.jpg" alt="WechatIMG475" style="zoom:50%;" />
+<img src="./pic/WechatIMG475.jpg" alt="WechatIMG475" style="zoom:30%;" />
 
 结论：额外开销小。
 
@@ -96,13 +96,13 @@ run 3 GPU applications (MNIST, Cifar10, AlexNet) (both computing intensive and m
 
 - 实验1: 评估partition计算资源 对软件性能的影响
 
-  <img src="./pic/WechatIMG476.jpg" alt="WechatIMG476" style="zoom:50%;" />
+  <img src="./pic/WechatIMG476.jpg" alt="WechatIMG476" style="zoom:30%;" />
 
 - 实验2: 评估partition内存资源 对软件性能的影响
 
-  <img src="./pic/WechatIMG477.jpg" alt="WechatIMG477" style="zoom:50%;" />
+  <img src="./pic/WechatIMG477.jpg" alt="WechatIMG477" style="zoom:30%;" />
 
-  <img src="./pic/WechatIMG478.jpg" alt="WechatIMG477" style="zoom:50%;" />
+  <img src="./pic/WechatIMG478.jpg" alt="WechatIMG477" style="zoom:30%;" />
 
 ### Isolation
 
