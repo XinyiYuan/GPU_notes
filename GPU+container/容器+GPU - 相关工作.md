@@ -68,6 +68,8 @@ GPU池化：使用远程访问的形式使用GPU资源，任务是用本机的CP
 
 ### kubernetes
 
+> [【Kubernetes】如何让kubernetes集群使用GPU](https://tweakzx.github.io/p/kubernetes%E5%A6%82%E4%BD%95%E8%AE%A9kubernetes%E9%9B%86%E7%BE%A4%E4%BD%BF%E7%94%A8gpu/)
+
 - 阿里 cGPU，未开源无论文。
 
   > https://www.alibabacloud.com/help/zh/elastic-gpu-service/latest/use-docker-to-install-and-use-cgpu
@@ -97,6 +99,8 @@ GPU池化：使用远程访问的形式使用GPU资源，任务是用本机的CP
   > 腾讯云论坛GaiaStack介绍：https://cloud.tencent.com/developer/article/1389547
   >
   > 腾讯云市场GaiaStack：https://market.cloud.tencent.com/products/3966?productId=3966#
+  >
+  > [【Kubernetes】部署gaiaGPU（vCUDA）](https://tweakzx.github.io/p/kubernetes部署gaiagpuvcuda/)
 
   通过劫持对Cuda driver API的调用来做到资源隔离。劫持的调用如图二所示。具体实现方式也较为直接，在调用相应API时检查：（1）对于显存，一旦该任务申请显存后占用的显存大小大于config中的设置，就报错。（2）对于计算资源，存在硬隔离和软隔离两种方式，共同点是当任务使用的GPU SM利用率超出资源上限，则暂缓下发API调用。不同点是如果有资源空闲，软隔离允许任务超过设置，动态计算资源上限。而硬隔离则不允许超出设置量。
 
