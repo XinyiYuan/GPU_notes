@@ -106,11 +106,9 @@
 
    - Packing：类似任务并行
 
-     只有当作业需要的资源不超过GPU的资源、且不会对彼此产生不利影响时，Packing才是有效的。（如果作业相互干扰，Packing就会比Suspend-Resume差很多。
+     只有当作业需要的资源不超过GPU的资源、且不会对彼此产生不利影响时，Packing才是有效的。（如果作业相互干扰，Packing就会比Suspend-Resume差很多。）
 
      > 可能采取类似于Nvidia MPS中上下文共享的方法。因为不同的进程共享了GPU上下文，因此与上一种方法对比则减少了上下文切换的开销。当然，这种方法的局限性在于（1）任务之间不能产生消极的相互影响；（2）任务需要的显存总量不能超过GPU能够提供的最大值。
-
-   本模型的资源调度采用了贪心算法的思想。首先，所有的任务都采用Suspend-Resume的方法运行一段时间，并进行Profiling（监测资源使用和任务进度）。假如有合适装箱的任务（显存使用量小、不互相干扰）的进程进行Packing。如果Packing之后的结果比Packing之前的好的话，那么重复上述步骤；否则，取消Packing，重新Suspend-Resume，直到找到新的可能适合Packing的任务。
 
 2. Migration 改变分配给任务的GPU集
 
@@ -170,11 +168,71 @@
 
 为了实现这些目标，Gandiva调度器以两种模式运行（可同时处于两种模式）：响应模式Reactive Mode、内省模式Introspective Mode。
 
-- 响应模式Reactive Mode：对事件（如工作到达、离开、机器故障等）做出反应
+- 响应模式Reactive Mode
 
-- 内省模式Introspective Mode： 一个持续的过程，过程中，调度器的目标是提高集群的利用率和作业完成时间
+  对事件（如工作到达、离开、机器故障等）做出反应
+
+  - 作业到达
+
+    <img src=".\pic\20230906224442.png" alt="20230906224442" style="zoom:30%;" />
+
+    findNodes是一个函数，用于返回满足作业请求的节点候选者。有一个可选参数，可用来约束亲和力。
+
+    最初，Gandiva试图找到与新工作具有相同亲和力的节点，并在这些节点中找到具有最小负载的节点。如果存在这样的节点，并且它们的高度小于1（第5-6行），该节点将被分配。
+
+    否则，Gandiva试图找到并分配未亲和的节点（第7-8行）。
+
+    如果没有这样的空闲服务器，第三个选择是寻找有空闲GPU的节点，同时忽略亲和力（第9-10行）。（这可能会导致多个节点之间的碎片化分配，但Migration可以用于处理碎片化问题）。
+
+    如果上述方法都不奏效，这意味着集群中没有可用的GPU。在这种情况下，如果存在具有相同亲和力的节点，它们将被用于暂停-恢复（第11-12行）；如果没有，作业将被排队（第13-14行）。
+
+  - 作业离开
+
+    传统的调度器用作业离开来触发从等待队列中挑选下一个作业
+
+    另外，Gandiva会检查集群的高度是否可以降低（通过Migration）
+
+    最后，作业离开可以导致migrations for improving locality
+
+  - 机器故障
+
+    没有展开说。we follow the conventional approach for failure handling
+
+- 内省模式Introspective Mode
+
+   一个持续的过程。调度器持续监控并优化作业在GPU上的位置，以提高集群的利用率和作业完成时间
+
+  - Packing
+
+    只在过载时候使用。但可能无效，也可能不如Suspend-Resume。
+
+    采用了贪心算法的思想。首先，所有的任务都采用Suspend-Resume的方法运行一段时间，并进行Profiling（监测资源使用和任务进度）。调度器贪婪地挑选出GPU利用率最低的作业，并试图将其Packing到具有最低GPU利用率的GPU上。如果Packing之后的结果比Packing之前更好，那么重复上述步骤；否则，取消Packing，重新Suspend-Resume，直到找到新的可能适合Packing的任务。
+
+    26%效率提升
+
+  - Migration
+
+    改善位置性：挑选那些不在同一地点的作业，并试图找到一个新的同一地点的位置。
+
+    去碎片化：挑选非空闲、但拥有最多空闲GPU的服务器，尝试将运行在该服务器上的作业迁移到其他空闲GPU较少的服务器上。
+
+  - Grow-Shrink
+
+    使用条件：集群中存在空闲，且DLT作业明确指出自己可以进行Grow-Shrink
+
+    防止震荡：在空闲一段时间后才触发Grow，在新作业可能需要GPU时立即Shrink
+
+    只让作业增长到单台服务器中可用的最大GPU数量
+
+  - Time-Slicing
+
+    在每个服务器中轮回调度，以公平地分享GPU。但作业具有优先级，较高优先级的作业将不会被暂停以适应较低优先级的作业。
 
 ## Implementation
+
+DLT作业被封装为Docker容器，其中包含我们定制的DL工具箱和Gandiva客户端的版本。这些工作被提交给Kubernetes系统。Gandiva还实现了一个定制的调度器，然后对这些作业进行调度。
+
+### Scheduler
 
 Gandiva和现有调度器的对比（示意图）：
 
@@ -184,5 +242,40 @@ Gandiva的architecture：
 
 <img src=".\pic\WechatIMG481.jpg" alt="WechatIMG481" style="zoom:30%;" />
 
-论文的改进指出在于图上的绿色方框内：左侧实现了一个资源调度器，右侧实现了一个与调度器进行交互的客户端。调度器从宏观的角度对用户的训练任务进行资源分配，而客户端则是真正负责任务的开始、结束、暂停、重启等操作。
+论文的改进为图上绿色部分。首先单独实现了一个资源调度器，而且在DLT工作容器中实现了一个与调度器进行交互的客户端。
 
+- 调度器
+
+  一个由Kubernetes管理的容器
+
+  Kubernetes负责整体集群管理，Gandiva调度器从宏观的角度对用户的训练任务进行资源分配。
+
+  Gandiva调度器使用Kubernetes API来获取集群节点和容器信息，每当提交一个新的容器时，调度器会根据调度策略将其分配给集群中的一个或多个GPU。
+
+- 客户端
+
+  与调度器交互，真正负责任务的开始、结束、暂停、重启等操作。
+
+  当一个容器被安排在一个节点上时，最初只有Gandiva客户端开始执行。然后，客户端轮询Gandiva调度器，得到调度器的指令后，使用暂停/恢复和迁移命令控制DLT工作的执行。
+
+### DL Toolkits
+
+- PyTorch time-slicing
+
+  暂停：Gandiva client发出SIGTSTP信号（表示需要立即暂停进程），Toolkits通过跟踪GPU内存使用周期来确定mini-batch的边界。一旦检测到周期最小值，工具包（1）将所有存储的对象从GPU复制到CPU，（2）释放GPU分配，（3）暂停进程。
+
+  恢复：Gandiva client发出SIGCONT信号（表示恢复进程），Toolkits分配GPU内存，将存储的对象从CPU复制到GPU，并恢复进程。（可能发生地址改变，需要注意修补）
+
+- Tensorflow migration
+
+  在每个server上部署一个Migration Helper来协助Migration。
+
+  迁移：dest Helper首先预热TF会话（检查GPU配置并重建元图），src Helper要求TF保存检查点，在跨服务器迁移的情况下将检查点移到目的地，最后恢复训练会话。
+
+  > 为了加快迁移过程，我们采用Ramdisk将检查点保存在内存中。在跨服务器的情况下，修改后的TF通过网络文件系统（NFS）协议将检查点直接保存到远程Ramdisk。
+
+  检查点：Migration Helper要求作业执行checkpoint，修改后的TF会在一个mini-batch结束时调用tf.Saver。
+
+  > 对于数据的并行性，检查点只包括一个GPU中的模型，而不考虑训练中使用的GPU数量。
+  >
+  > 为了进一步加快TF的迁移，我们在检查点中不包括元图结构，因为它可以根据用户代码进行重建。

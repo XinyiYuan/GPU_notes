@@ -138,7 +138,9 @@ GPU池化：使用远程访问的形式使用GPU资源，任务是用本机的CP
 
   <img src="./pic/WechatIMG481.jpg" alt="WechatIMG481" style="zoom:30%;" />
 
-  [TODO]还没有读完，下周可以仔细读一下这篇
+  调度机制：Suspend-Resume（类似轮流运行），Packing（类似任务并行），Migration（任务迁移到另一个GPU上），Grow-Shrink（存在空闲时给任务分配空余GPU）。
+  
+  性能衡量：Profiling（过比对每个迭代过程所花费的时间，trial-and-error，而不是建模计算）。
 
 ### 其他
 
