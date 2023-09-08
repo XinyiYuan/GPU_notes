@@ -145,6 +145,14 @@ GPU池化：使用远程访问的形式使用GPU资源，任务是用本机的CP
   调度机制：Suspend-Resume（类似轮流运行），Packing（类似任务并行），Migration（任务迁移到另一个GPU上），Grow-Shrink（存在空闲时给任务分配空余GPU）。
   
   性能衡量：Profiling（过比对每个迭代过程所花费的时间，trial-and-error，而不是建模计算）。
+  
+- AntMan
+
+  > AntMan: Dynamic Scaling on GPU Clusters for Deep Learning(OSDI'20) https://www.usenix.org/system/files/osdi20-xiao.pdf
+  >
+  > slide: https://www.usenix.org/sites/default/files/conference/protected-files/osdi20_slides_xiao.pdf
+
+  
 
 ### 其他
 
