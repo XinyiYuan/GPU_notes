@@ -2,7 +2,7 @@
 
 ## CUDA原理
 
-<img src="/Users/smx1228/Desktop/GPU_notes/GPU+container/pic/032zh3rohx.jpeg" alt="032zh3rohx" style="zoom:50%;" />
+<img src="./pic/032zh3rohx.jpeg" alt="032zh3rohx" style="zoom:50%;" />
 
 Nvidia GPU的软件调用栈：
 

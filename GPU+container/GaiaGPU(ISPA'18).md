@@ -22,13 +22,13 @@
 
 At the host level, the GPU Manager is in charge of creating vGPUs, and the GPU Scheduler is responsible for allocating physical GPU resources to vGPUs. At the container level, the vGPU Library component takes charge of managing GPU resources of a specific container.
 
-<img src="/Users/smx1228/Desktop/GPU_notes/GPU+container/pic/WechatIMG473.jpg" alt="WechatIMG473" style="zoom:30%;" />
+<img src="./pic/WechatIMG473.jpg" alt="WechatIMG473" style="zoom:30%;" />
 
 ### GPU Manager
 
 advertise GPUs to the Kubelet.
 
-<img src="/Users/smx1228/Desktop/GPU_notes/GPU+container/pic/WechatIMG474.jpg" alt="WechatIMG474" style="zoom:30%;" />
+<img src="./pic/WechatIMG474.jpg" alt="WechatIMG474" style="zoom:30%;" />
 
 - Rigister: GPU manager inform the Kubelet of its existence
 - ListAndWatch: GPU Manager returns a list of devices it manages to the Kubelet. (Memory: 256MB as a unit (vmemory device); Computing resources: partition a physical GPU into 100 vprocessor devices.)

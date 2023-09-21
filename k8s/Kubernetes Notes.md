@@ -1,5 +1,57 @@
 # Kubernetes Notes
 
+[TOC]
+
+## Kubernetes
+
+开源平台，用于管理生产中的容器化应用程序。适用于可能需要快速扩展和缩减(scale up and down quickly)的大型应用程序。
+
+## k8s六层抽象
+
+下面是 K8s 的六层概念，从最高级的抽象开始：
+
+Deployment，ReplicaSet，Pod，Node Cluster，Node Processes，Docker Container
+
+管理和运行 Pod 的高级 K8s API 资源有五个：Deployments、StatefulSets、DaemonSets、Jobs 和 CronJobs。
+
+## Deployment
+
+如果你想制作一个持续运行的无状态应用，比如 HTTP 服务器，你需要一个 Deployment。 Deployment允许您在不停机的情况下更新正在运行的应用程序。 Deployment还指定了在 Pod 死亡时重新启动 Pod 的策略。您可以从命令行或配置文件创建Deployment。
+
+## ReplicaSet
+
+Deployment 会创建一个 ReplicaSet，以确保您的应用程序具有所需数量的 Pod。 ReplicaSets 将根据您在 Deployment 中指定的触发器创建和扩展 Pod。
+
+## Pod（荚）
+
+Pod是 Kubernetes 的基本构建块。 一个 Pod 包含一组（一个或多个）容器。 通常，每个 Pod 有一个容器。
+
+Pod 处理容器的卷(Volumes)、密钥(Secrets)和配置。
+
+Pod 是短暂的。 它们旨在在它们死亡时自动重新启动。
+
+当应用程序被 ReplicationSet 水平扩展时，Pod 会被复制。 每个 Pod 将运行相同的容器代码。
+
+Pod 存在于工作节点上（Worker Nodes）。
+
+## Master
+
+Master 组件是 API 服务器（又名 kube-apiserver）、etcd、Scheduler（又名 kube-scheduler）、kube-controller-manager 和cloud-controller manager。
+
+- API 服务器——公开 K8s API。 它是 Kubernetes 控制的前端。 （又名。kube-apiserver）。
+- etcd — 集群状态数据的分布式键值存储，想想集群信息。
+- Scheduler（调度程序） — 为新 Pod 选择节点。 （又名 kube-scheduler），想想匹配器。
+- kube-controller-manager — 运行控制器来处理集群后台任务的进程。 想想集群控制器。
+- cloud-controller-manager — 运行与云供应商交互的控制器。 想想云界面。
+
+## Worker
+
+Worker Node 的组件是 kubelet、kube-proxy 和 Container Runtime。
+
+- kubelet — 负责工作节点上的一切。 它与 Master 的 API 服务器通信。 是工作节点的大脑。
+- kube-proxy — 将连接路由到正确的 Pod。 还为服务执行跨 Pod 的负载平衡。
+- Container Runtime — 下载镜像并运行容器。 例如，Docker 是一个容器运行时。
+
 ## DaemonSet
 
 确保全部或者某些节点上必须运行一个Pod的工作负载资源（守护进程），当有节点加入集群时， 也会为他们新增一个 Pod。
